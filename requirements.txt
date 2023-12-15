@@ -3,3 +3,4 @@ langchain
 transformers
 openai
 chromadb
+tiktoken

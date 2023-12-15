@@ -4,3 +4,4 @@ transformers
 openai
 chromadb
 tiktoken
+faiss

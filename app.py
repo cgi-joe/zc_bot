@@ -99,7 +99,6 @@ def handle_user_input2(user_question):
     print(f"Query Time: {query_time:.2f} seconds") 
 
 def main():
-    load_dotenv()
     st.set_page_config(page_title="Zero Commission Assistant", page_icon=":chat:")
     st.write(css, unsafe_allow_html=True)
 

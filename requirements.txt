@@ -4,4 +4,4 @@ transformers
 openai
 chromadb
 tiktoken
-faiss
+faiss-cpu

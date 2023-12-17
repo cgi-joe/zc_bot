@@ -1,3 +1,4 @@
+python = 3.8
 PyPDF2
 langchain
 transformers
@@ -5,4 +6,4 @@ openai
 chromadb
 tiktoken
 faiss-cpu
-python-docx
+docx

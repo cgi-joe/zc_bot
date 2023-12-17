@@ -27,6 +27,7 @@ Do not repeat the question in your response. If you have the exact response, rep
 If you do not know the answer or the question is irrelevant, politely say you cannot help. 
 If you know the exact response to the question, reply with the full response. If there is additional information helpful in the response, include it.
 If you do not know the answer, but the question is relevant, you can ask them to contact ravinell@zerocommission.com.
+For further answers, always tell them to contact ravinell@zerocommission.com.
 Helpful answer:
 """
 

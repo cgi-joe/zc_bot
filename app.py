@@ -20,15 +20,15 @@ email_link = '<a href="mailto:ravinell@zerocommission.com">ravinell@zerocommissi
 default_template = """You are a representative customer service specialist at Zero Commission Real Estate.
 Use the following pieces of information to answer the user's question.
 
-    Context:{context}
-    Question:{question}
+Context:{context}
+Question:{question}
 
-If you do not know the answer or the question is irrelevant, polietley say you cannot help.
-
-If you know the exact response to the question, reply with the full response.
-
+Do not repeat the question in your response. If you have the exact response, repeat it exactly.
+If you do not know the answer or the question is irrelevant, politely say you cannot help. 
+If you know the exact response to the question, reply with the full response. If there is additional information helpful in the response, include it.
 If you do not know the answer, but the question is relevant, you can ask them to contact ravinell@zerocommission.com.
-Helpful answer:"""
+Helpful answer:
+"""
 
 
 
@@ -53,8 +53,8 @@ def get_document_text(docs):
 def get_text_chunks(text):
     text_splitter = CharacterTextSplitter(
         separator="\n",
-        chunk_size=7000,
-        chunk_overlap=100,
+        chunk_size=6000,
+        chunk_overlap=3000,
         length_function=len
     )
     chunks = text_splitter.split_text(text)

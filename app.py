@@ -7,29 +7,54 @@ from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain, RetrievalQA
 from htmlTemplates import css, bot_template, user_template
-import transformers
 from langchain.prompts import PromptTemplate
-
-
-
+import transformers
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 import time
+from docx import Document
+import io
 
 
-def get_pdf_text(pdf_docs):
+email_link = '<a href="mailto:ravinell@zerocommission.com">ravinell@zerocommission.com</a>'
+
+default_template = """You are a representative customer service specialist at Zero Commission Real Estate.
+Use the following pieces of information to answer the user's question.
+
+    Context:{context}
+    Question:{question}
+
+If you do not know the answer or the question is irrelevant, polietley say you cannot help.
+
+If you know the exact response to the question, reply with the full response.
+
+If you do not know the answer, but the question is relevant, you can ask them to contact ravinell@zerocommission.com.
+Helpful answer:"""
+
+
+
+def get_document_text(docs):
     text = ""
-    for pdf in pdf_docs:
-        pdf_reader = PdfReader(pdf)
-        for page in pdf_reader.pages:
-            text += page.extract_text()
+    for doc in docs:
+        if doc.type == "application/pdf":
+            pdf_reader = PdfReader(doc)
+            for page in pdf_reader.pages:
+                text += page.extract_text() + '\n'
+        elif doc.type in ["application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/msword"]:
+            docx = Document(doc)
+            for para in docx.paragraphs:
+                text += para.text + '\n'
+        elif doc.type == "text/plain":
+            doc.seek(0)
+            text += doc.read().decode('utf-8') + '\n'
+        else:
+            raise ValueError(f"Unsupported file type: {doc.type}")
     return text
-
 
 def get_text_chunks(text):
     text_splitter = CharacterTextSplitter(
         separator="\n",
-        chunk_size=1000,
-        chunk_overlap=200,
+        chunk_size=7000,
+        chunk_overlap=100,
         length_function=len
     )
     chunks = text_splitter.split_text(text)
@@ -44,18 +69,7 @@ def get_vectorstore(text_chunks, api_key):
 def setup_chain(vector_store, api_key):
     llm = ChatOpenAI(temperature=0, openai_api_key=api_key)
     
-    template = """You are a representative customer service specialist at Zero Commission Real Estate.
-    Use the following pieces of information to answer the user's question.
-    If you dont know the answer just say you know, don't try to make up an answer.
-    If question is relevant to Real Estate, but you do not have answer, say that you will ask a real estate specialist at Zero Commission.
-
-    Context:{context}
-    Question:{question}
-
-    Only return the helpful answer below and nothing else. If the question is not relevant to the context, say politely you cannot help.
-    If you know the exact response to the question, reply with the full response. Add any other helpful and relevant info that may be helpful if you deem it appropriate to the question.
-    Helpful answer:
-    """
+    template = st.session_state['template']
     
     qa_prompt = PromptTemplate(template=template, input_variables=['context', 'question'])
 
@@ -79,30 +93,28 @@ def get_conversation_chain(vectorstore, api_key):
     )
     return conversation_chain
 
-
 def handle_user_input(user_question):
     start_time = time.time()
-    print("Starting query...")  
-    response = st.session_state.conversation_chain({'question': user_question})
-    query_time = time.time() - start_time 
-    st.write(bot_template.replace("{{MSG}}", response['answer']), unsafe_allow_html=True)
-    st.write(f"Query Time: {query_time:.2f} seconds") 
-    print(f"Query Time: {query_time:.2f} seconds") 
-    
-def handle_user_input2(user_question):
-    start_time = time.time()
-    print("Starting query...")  
+    print("Starting query...")
     response = st.session_state.conversation_chain({'query': user_question})
-    query_time = time.time() - start_time 
-    st.write(bot_template.replace("{{MSG}}", response['result']), unsafe_allow_html=True)
+    query_time = time.time() - start_time
+    
+    # Ensure HTML in the response is rendered correctly
+    formatted_response = bot_template.replace("{{MSG}}", response['result']).replace("ravinell@zerocommission.com", email_link)
+    st.markdown(formatted_response, unsafe_allow_html=True)
+    
     st.write(f"Query Time: {query_time:.2f} seconds") 
-    print(f"Query Time: {query_time:.2f} seconds") 
+    print(f"Query Time: {query_time:.2f} seconds")
 
 def main():
     st.set_page_config(page_title="Zero Commission Assistant", page_icon=":chat:")
     st.write(css, unsafe_allow_html=True)
 
     st.header("Zero Commission Assistant")
+
+    # Initialize the template in session state if not already present
+    if 'template' not in st.session_state:
+        st.session_state['template'] = default_template
 
     # Input for OpenAI API key
     with st.sidebar:
@@ -112,29 +124,64 @@ def main():
             st.session_state['openai_api_key'] = api_key
             st.success("API Key added successfully!")
 
-    user_question = st.text_input("Ask a question about Zero Commission Real Estate!")
+
+    
+    with st.form(key='user_query_form'):
+        user_question = st.text_input("Ask a question about Zero Commission Real Estate!")
+        submit_button = st.form_submit_button(label='Submit')
+
+    if submit_button and "conversation_chain" in st.session_state:
+        handle_user_input(user_question)
+    
+    st.subheader("Template Editing")
+    if st.button("Edit Template"):
+        st.session_state['edit_mode'] = True
+
+    if st.session_state.get('edit_mode', False):
+        new_template = st.text_area("Edit the Template:", st.session_state['template'], height=300)
+        if st.button("Save Template"):
+            st.session_state['template'] = new_template
+            st.session_state['edit_mode'] = False
+            st.success("Template updated!")
+            st.session_state.conversation_chain = setup_chain(st.session_state.vectorstore, st.session_state['openai_api_key'])
+            st.experimental_rerun()
+        
+        if st.button("Reset to Default Template"):
+            st.session_state['template'] = default_template
+            st.success("Template reset to default!")
+            st.session_state.conversation_chain = setup_chain(st.session_state.vectorstore, st.session_state['openai_api_key'])
+            st.experimental_rerun()
+
 
     with st.sidebar:
         st.subheader("Your documents")
-        pdf_docs = st.file_uploader("Upload your PDFs here and click on 'Process'", accept_multiple_files=True)
+        docs = st.file_uploader("Upload your documents here and click on 'Process'", 
+                        accept_multiple_files=True, 
+                        type=['pdf', 'docx', 'doc', 'txt'])
         if st.button("Process"):
             if 'openai_api_key' not in st.session_state or not st.session_state['openai_api_key']:
                 st.error("Please add your OpenAI API Key first.")
             else:
-                with st.spinner("Processing"):
-                    start_time = time.time()
-                    print("Starting processing...")  
-                    raw_text = get_pdf_text(pdf_docs)
-                    text_chunks = get_text_chunks(raw_text)
-                    vectorstore = get_vectorstore(text_chunks, st.session_state['openai_api_key'])
-                    st.session_state.conversation_chain = setup_chain(vectorstore, st.session_state['openai_api_key'])
-                processing_time = time.time() - start_time  
-                st.sidebar.write(f"Processing Time: {processing_time:.2f} seconds") 
-                print(f"Processing Time: {processing_time:.2f} seconds") 
-
-
-    if user_question and "conversation_chain" in st.session_state:
-        handle_user_input2(user_question)
-
+                try:
+                    with st.spinner("Processing"):
+                        start_time = time.time()
+                        print("Starting processing...")
+                        if 'raw_text' not in st.session_state:
+                            st.session_state.raw_text = get_document_text(docs)
+                        st.session_state.raw_text = get_document_text(docs)
+                        if 'text_chunks' not in st.session_state:
+                            st.session_state.text_chunks = get_text_chunks(st.session_state.raw_text)
+                        st.session_state.text_chunks = get_text_chunks(st.session_state.raw_text)
+                        if 'vectorstore' not in st.session_state:
+                            st.session_state.vectorstore = get_vectorstore(st.session_state.text_chunks, st.session_state['openai_api_key'])
+                        st.session_state.vectorstore = get_vectorstore(st.session_state.text_chunks, st.session_state['openai_api_key'])
+                        if 'conversation_chain' not in st.session_state:
+                            st.session_state.conversation_chain = setup_chain(st.session_state.vectorstore, st.session_state['openai_api_key'])
+                    processing_time = time.time() - start_time  
+                    st.sidebar.write(f"Processing Time: {processing_time:.2f} seconds") 
+                    print(f"Processing Time: {processing_time:.2f} seconds")
+                except ValueError as e:
+                    st.error(str(e))
+                    
 if __name__ == '__main__':
     main()

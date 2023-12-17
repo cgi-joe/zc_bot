@@ -5,3 +5,4 @@ openai
 chromadb
 tiktoken
 faiss-cpu
+python-docx

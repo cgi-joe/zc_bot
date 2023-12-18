@@ -54,8 +54,8 @@ def get_document_text(docs):
 def get_text_chunks(text):
     text_splitter = CharacterTextSplitter(
         separator="\n",
-        chunk_size=7000,
-        chunk_overlap=1000,
+        chunk_size=200,
+        chunk_overlap=0,
         length_function=len
     )
     chunks = text_splitter.split_text(text)

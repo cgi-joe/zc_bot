@@ -54,8 +54,8 @@ def get_document_text(docs):
 def get_text_chunks(text):
     text_splitter = CharacterTextSplitter(
         separator="\n",
-        chunk_size=200,
-        chunk_overlap=0,
+        chunk_size=1000,
+        chunk_overlap=200,
         length_function=len
     )
     chunks = text_splitter.split_text(text)
@@ -76,7 +76,7 @@ def setup_chain(vector_store, api_key):
 
     return RetrievalQA.from_chain_type(llm=llm,
                                        chain_type='stuff',
-                                       retriever=vector_store.as_retriever(search_kwargs={'k': 2}),
+                                       retriever=vector_store.as_retriever(search_kwargs={'k': 5}),
                                        return_source_documents=True,
                                        chain_type_kwargs={'prompt': qa_prompt})
 

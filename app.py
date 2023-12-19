@@ -27,7 +27,7 @@ Do not repeat the question in your response. If you have the exact response, rep
 If you do not know the answer or the question is irrelevant, politely say you cannot help. 
 If you know the exact response to the question, reply with the full response. If there is additional information helpful in the response, include it.
 If you do not know the answer, but the question is relevant, you can ask them to contact ravinell@zerocommission.com.
-For further answers, always tell them to contact ravinell@zerocommission.com.
+For further answers, tell them to contact ravinell@zerocommission.com only if the question is relevant to the context or real estate in anyway.
 Helpful answer:
 """
 
@@ -77,7 +77,7 @@ def setup_chain(vector_store, api_key):
     return RetrievalQA.from_chain_type(llm=llm,
                                        chain_type='stuff',
                                        retriever=vector_store.as_retriever(search_kwargs={'k': 5}),
-                                       return_source_documents=True,
+                                       return_source_documents=False,
                                        chain_type_kwargs={'prompt': qa_prompt})
 
 

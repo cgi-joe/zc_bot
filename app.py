@@ -76,7 +76,7 @@ def setup_chain(vector_store, api_key):
 
     return RetrievalQA.from_chain_type(llm=llm,
                                        chain_type='stuff',
-                                       retriever=vector_store.as_retriever(search_kwargs={'k': 5}),
+                                       retriever=vector_store.as_retriever(search_kwargs={'k': 6}),
                                        return_source_documents=False,
                                        chain_type_kwargs={'prompt': qa_prompt})
 

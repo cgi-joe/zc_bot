@@ -18,16 +18,16 @@ import io
 email_link = '<a href="mailto:ravinell@zerocommission.com">ravinell@zerocommission.com</a>'
 
 default_template = """You are a representative customer service specialist at Zero Commission Real Estate.
-Use the following pieces of information to answer the user's question.
+Use the following pieces of information to provid a helpful answer the user's question.
 
 Context:{context}
 Question:{question}
 
-Do not repeat the question in your response. If you have the exact response, repeat it exactly.
+If you have the exact response, repeat it verbatim.
 If you do not know the answer or the question is irrelevant, politely say you cannot help. 
-If you know the exact response to the question, reply with the full response. If there is additional information helpful in the response, include it.
 If you do not know the answer, but the question is relevant, you can ask them to contact ravinell@zerocommission.com.
 For further answers, tell them to contact ravinell@zerocommission.com only if the question is relevant to the context or real estate in anyway.
+Keep your response as close to the language used in the context as much as possible.
 Helpful answer:
 """
 
@@ -76,7 +76,7 @@ def setup_chain(vector_store, api_key):
 
     return RetrievalQA.from_chain_type(llm=llm,
                                        chain_type='stuff',
-                                       retriever=vector_store.as_retriever(search_kwargs={'k': 6}),
+                                       retriever=vector_store.as_retriever(search_kwargs={'k': 3}),
                                        return_source_documents=False,
                                        chain_type_kwargs={'prompt': qa_prompt})
 

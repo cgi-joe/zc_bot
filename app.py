@@ -1,6 +1,6 @@
 import streamlit as st
 from PyPDF2 import PdfReader
-from langchain.text_splitter import CharacterTextSplitter
+from langchain.text_splitter import CharacterTextSplitter, RecursiveCharacterTextSplitter
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
 from langchain.chat_models import ChatOpenAI
@@ -23,7 +23,7 @@ Use the following pieces of information to provid a helpful answer the user's qu
 Context:{context}
 Question:{question}
 
-If you have the exact response, repeat it verbatim.
+Only give the exact response to a question as it appears in the context.
 If you do not know the answer or the question is irrelevant, politely say you cannot help. 
 If you do not know the answer, but the question is relevant, you can ask them to contact ravinell@zerocommission.com.
 For further answers, tell them to contact ravinell@zerocommission.com only if the question is relevant to the context or real estate in anyway.
@@ -52,14 +52,24 @@ def get_document_text(docs):
     return text
 
 def get_text_chunks(text):
-    text_splitter = CharacterTextSplitter(
-        separator="\n",
-        chunk_size=1000,
-        chunk_overlap=200,
-        length_function=len
-    )
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=500,
+        chunk_overlap=100,
+        length_function=len,
+        add_start_index=True,
+        )
     chunks = text_splitter.split_text(text)
     return chunks
+# def get_text_chunks(text):
+#     text_splitter = CharacterTextSplitter(
+#         separator="\n",
+#         chunk_size=15000,
+#         chunk_overlap=0,
+#         length_function=len
+#     )
+#     chunks = text_splitter.split_text(text)
+#     return chunks
+
 
 
 def get_vectorstore(text_chunks, api_key):
@@ -76,7 +86,7 @@ def setup_chain(vector_store, api_key):
 
     return RetrievalQA.from_chain_type(llm=llm,
                                        chain_type='stuff',
-                                       retriever=vector_store.as_retriever(search_kwargs={'k': 3}),
+                                       retriever=vector_store.as_retriever(search_kwargs={'k': 4}),
                                        return_source_documents=False,
                                        chain_type_kwargs={'prompt': qa_prompt})
 
@@ -106,6 +116,7 @@ def handle_user_input(user_question):
     
     st.write(f"Query Time: {query_time:.2f} seconds") 
     print(f"Query Time: {query_time:.2f} seconds")
+    # print(response)
 
 def main():
     st.set_page_config(page_title="Zero Commission Assistant", page_icon=":chat:")
